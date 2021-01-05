@@ -22,5 +22,30 @@ Devem ser criadas 3 telas:
 ### Login
 
 A tela de login deve apresentar dois campos:
-- __Usuário:__ Campo `text` com no máximo `128 Bits` que valida se o valor preenhido é um `email`.  
-- __Senha:__ Campo `password` com no mínimo `32 Bits` máximo `64 Bits` caracteres# test-react
+- _Usuário:_ Campo `text` com no mínimo `64 Bits` e no máximo `128 Bits`.  
+- _Senha:_ Campo `password` com no mínimo `32 Bits` máximo `64 Bits` caracteres.
+
+![login](https://github.com/trademasterbr/test-react/raw/main/wireframe/login.png)
+
+
+__Validation__
+- _Usuário:_  O valor preenhido deve ser um `email`  
+- _Senha:_ O valor preenchido deve conter:
+    - Número
+    - Letra Minúscula
+    - Letra maiúscula
+    - Caracter especial
+
+__Action__
+
+Caso de Sucesso (Acesso Garantido):
+- O valor do campo _Usuário_ deve conter a string '`@trademaster.com.br`'
+- O valor do campo _Senha_ deve conter a string '`Tm`'
+
+Caso de Erro (Acesso Negado):
+- Qualquer valor diferente do descrito no facículo `Caso de Sucesso`
+
+Em caso de Erro, deve ser mostrado na tela do usuáro uma mensagem contendo o seguinte conteúdo:
+- Acesso Negado, Verifique se o usuário e senha condizem com credenciais válidas.
+
+
