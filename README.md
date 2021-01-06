@@ -1,4 +1,4 @@
-# TÔ Dentro
+# Test React
 
 Esta é uma aplicarão [React](https://reactjs.org/) simple para avaliar o conhecimento do candidato para uma vaga de desenvolvedor frontend para [Trademaster Servicos e Participações S.A.](https://www.trademaster.com.br/) 
 
@@ -19,33 +19,53 @@ Devem ser criadas 3 telas:
 - Home
 - Ajuda
 
+### Backend
+
+O backend para este teste está pronto e é um binário que executado cria um serviço web na porta `8000` com as seguintes rotas:
+ - _/login?user={email}&password={senha}_
+ - _/ajuda_ 
+
+Para fins de login, deve ser utilizado qualquer e-mail no campo `user`, desde que o mesmo possua sufixo `@trademaster.com.br`.
+
+A senha a ser utilizada deve ser a data atual no formato `YYYYMMDD`.
+
+```json
+{
+    "UserName": "admin",
+    "Name": "Administrador do Sistema"
+}
+```
+
 ### Login
 
 A tela de login deve apresentar dois campos:
-- _Usuário:_ Campo `text` com no mínimo `64 Bits` e no máximo `128 Bits`.  
-- _Senha:_ Campo `password` com no mínimo `32 Bits` máximo `64 Bits` caracteres.
+- _Usuário:_ Campo `text` com no __mínimo__ `64 Bits` e no __máximo__ `128 Bits`.  
+- _Senha:_ Campo `password` com no __mínimo__ `32 Bits` __máximo__ `64 Bits` caracteres.
 
 ![login](https://github.com/trademasterbr/test-react/raw/main/wireframe/login.png)
 
 
 __Validation__
 - _Usuário:_  O valor preenhido deve ser um `email`  
-- _Senha:_ O valor preenchido deve conter:
-    - Número
-    - Letra Minúscula
-    - Letra maiúscula
-    - Caracter especial
+- _Senha:_ O campo deve ser preenchido
 
 __Action__
 
-Caso de Sucesso (Acesso Garantido):
-- O valor do campo _Usuário_ deve conter a string '`@trademaster.com.br`'
-- O valor do campo _Senha_ deve conter a string '`Tm`'
-
-Caso de Erro (Acesso Negado):
-- Qualquer valor diferente do descrito no facículo `Caso de Sucesso`
+Caso de Sucesso, o usuário deve ser direcionado a tela de Home do usuário
 
 Em caso de Erro, deve ser mostrado na tela do usuáro uma mensagem contendo o seguinte conteúdo:
-- Acesso Negado, Verifique se o usuário e senha condizem com credenciais válidas.
+- `Acesso Negado, Verifique se o usuário e senha condizem com credenciais válidas.`
 
+### Ajuda
 
+A tela deve ter como título a palavara `Ajuda` e um texto explicativo provindo de um serviço do backend.
+
+![ajuda](https://github.com/trademasterbr/test-react/raw/main/wireframe/ajuda.png)
+
+### Home
+
+A tela deve ter como título a palavara `Gerar Arvore AVL` e o corpo dividido entre duas partes; A primeira contemplando um campo `inteiro` com no __máximo__ `4 carcteres` e uma área que mostrará a árvore a ser criada.
+
+O objetivo desta tela é desenhar uma [Árvore AVL](http://dcm.ffclrp.usp.br/~augusto/teaching/aedi/AED-I-Arvores-AVL.pdf) na tela contendo exatos numeros de nós imputados no campo intero em questão.
+
+![home](https://github.com/trademasterbr/test-react/raw/main/wireframe/home.png)
