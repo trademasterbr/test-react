@@ -21,7 +21,7 @@ Devem ser criadas 3 telas:
 
 ### Backend
 
-O backend para este teste está pronto e é um binário que executado cria um serviço web na porta `8000` com as seguintes rotas:
+O backend para este teste está pronto e encontra-se no diretório `backend`. Este, quando executado, gera um serviço web com as seguintes rotas:
  - _/login?user={email}&password={senha}_
  - _/ajuda_ 
 
@@ -69,3 +69,5 @@ A tela deve ter como título a palavara `Gerar Arvore AVL` e o corpo dividido en
 O objetivo desta tela é desenhar uma [Árvore AVL](http://dcm.ffclrp.usp.br/~augusto/teaching/aedi/AED-I-Arvores-AVL.pdf) na tela contendo exatos numeros de nós imputados no campo intero em questão.
 
 ![home](https://github.com/trademasterbr/test-react/raw/main/wireframe/home.png)
+
+__PS:__ Caso sejas em processo para vaga de __Júnior__ ou __Júnior/Pleno__, não é necessário a implementação da [Árvore AVL](http://dcm.ffclrp.usp.br/~augusto/teaching/aedi/AED-I-Arvores-AVL.pdf), esta pode ser substituida por uma árvore em que todo nó deve ter no máximo 2 filhos.  
