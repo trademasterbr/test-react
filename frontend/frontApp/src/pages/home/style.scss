@@ -4,15 +4,15 @@ $primary-color: #00bcd4;
 $font-default: 'Open Sans', sans-serif;
 
 .PageHome {
-  .TitleHome{
+  .TitleHome {
     text-align: center;
     font-family: $font-default;
     font-size: 28px;
     padding-top: 50px;
   }
-.ContainerHome{
-  padding: 50px;
-  border: $primary-color solid 3px;
-  border-radius: 25px;
-}
+  .ContainerHome {
+    padding: 50px;
+    border: $primary-color solid 3px;
+    border-radius: 25px;
+  }
 }

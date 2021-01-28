@@ -4,7 +4,7 @@ $primary-color: #00bcd4;
 $font-default: 'Open Sans', sans-serif;
 
 .PageAjuda {
-  .TitleAjuda{
+  .TitleAjuda {
     text-align: center;
     font-family: $font-default;
     font-size: 28px;
@@ -14,7 +14,7 @@ $font-default: 'Open Sans', sans-serif;
     padding: 50px;
     border-radius: 25px;
   }
-  .TextAjuda{
+  .TextAjuda {
     text-align: justify;
     font-family: $font-default;
     font-size: 16px;
@@ -22,5 +22,4 @@ $font-default: 'Open Sans', sans-serif;
     white-space: pre-line;
     text-indent: 2em;
   }
-  
 }
