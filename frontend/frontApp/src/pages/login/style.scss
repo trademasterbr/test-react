@@ -1,0 +1,54 @@
+@import '../../assets/fonts/fonts.scss';
+
+$primary-color: #00bcd4;
+$font-default: 'Open Sans', sans-serif;
+
+.PageLogin {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+.ContainerLogin{
+  padding: 50px;
+  border: $primary-color solid 3px;
+  border-radius: 25px;
+}
+  .LogoLogin {
+    max-width: 360px;
+    height: 65px;
+    margin-bottom: 25px;
+  }
+  .TextInput{
+    .MuiInputBase-root {
+      width: 360px;
+      font-family: $font-default;
+    }
+    > .div {
+      margin-top: 10px;
+    }
+  }
+  .TextoErroLogin {
+    color: #ff6161 !important;
+    font-weight: normal !important;
+    opacity: 1;
+    font-size: 13px !important;
+  }
+  
+  .ButtonLogin {
+    background-color: $primary-color;
+    width: 100px;
+    margin-top: 25px;
+    font-family: $font-default;
+    font-size: 16px;
+    text-transform: none;
+    &:hover{
+      opacity: 0.8;
+      background-color: $primary-color;
+    }
+  }
+
+}

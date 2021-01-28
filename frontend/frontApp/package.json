@@ -1,0 +1,74 @@
+{
+  "name": "front_trademaster",
+  "version": "0.1.0",
+  "private": true,
+  "license": "private",
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn format --staged"
+    }
+  },
+  "dependencies": {
+    "@babel/helper-call-delegate": "^7.11.4",
+    "@date-io/moment": "^2.10.6",
+    "@fortawesome/fontawesome-svg-core": "^1.2.28",
+    "@fortawesome/free-solid-svg-icons": "^5.13.0",
+    "@fortawesome/react-fontawesome": "^0.1.9",
+    "@material-ui/core": "^4.9.5",
+    "@material-ui/lab": "^4.0.0-alpha.46",
+    "@material-ui/pickers": "^3.2.10",
+    "axios": "^0.19.2",
+    "axios-https-proxy-fix": "^0.17.1",
+    "cors": "^2.8.5",
+    "lodash": "^4.17.20",
+    "moment": "^2.24.0",
+    "node-sass": "^4.13.1",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
+    "react-redux": "^7.2.1",
+    "react-router-dom": "^5.1.2",
+    "react-scripts": "3.4.0",
+    "react-toastify": "^6.0.8",
+    "redux": "^4.0.5",
+    "redux-devtools-extension": "^2.13.8",
+    "redux-thunk": "^2.3.0",
+    "reduxsauce": "^1.2.0",
+    "typescript": "^3.8.3"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "lint": "eslint src/**/*.tsx",
+    "format": "yarn prettier --write \"src/**/*.{tsx,ts,js,scss}\""
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/react-router-dom": "^5.1.7",
+    "@typescript-eslint/eslint-plugin": "^2.22.0",
+    "@typescript-eslint/parser": "^2.22.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "^7.18.3",
+    "husky": "^4.2.5",
+    "i": "^0.3.6",
+    "prettier": "1.19.1",
+    "prettier-eslint-cli": "^5.0.0"
+  }
+}

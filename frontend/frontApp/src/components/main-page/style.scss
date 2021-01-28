@@ -1,0 +1,31 @@
+@import '../../assets/fonts/fonts.scss';
+$font-default: 'Open Sans', sans-serif;
+
+.PagePrincipal{
+  background-color: #fafafa  !important;
+
+  .IconPrincipal {
+    max-width: 160px;
+    height: 35px;
+    cursor: pointer;
+  }
+  .TextButtons{
+    font-family: $font-default;
+    color: black;
+    display: block;
+    text-align: center;
+    font-size: 16px;
+    text-transform: none !important;
+  }
+  .LogoutButtonPrincipal{
+    font-family: $font-default;
+    font-size: 16px;
+    color:royalblue;
+    text-decoration: underline;
+    cursor: pointer;
+    &:hover{
+      color:royalblue;
+      opacity: 0.8;
+    }
+  }
+}

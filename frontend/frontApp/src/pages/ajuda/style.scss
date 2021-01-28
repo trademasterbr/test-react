@@ -1,0 +1,26 @@
+@import '../../assets/fonts/fonts.scss';
+
+$primary-color: #00bcd4;
+$font-default: 'Open Sans', sans-serif;
+
+.PageAjuda {
+  .TitleAjuda{
+    text-align: center;
+    font-family: $font-default;
+    font-size: 28px;
+    padding-top: 50px;
+  }
+  .ContainerAjuda {
+    padding: 50px;
+    border-radius: 25px;
+  }
+  .TextAjuda{
+    text-align: justify;
+    font-family: $font-default;
+    font-size: 16px;
+    text-transform: none;
+    white-space: pre-line;
+    text-indent: 2em;
+  }
+  
+}

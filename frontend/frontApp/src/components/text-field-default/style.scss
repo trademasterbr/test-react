@@ -1,0 +1,92 @@
+@import '../../assets/fonts/fonts.scss';
+$font-default: 'Open Sans', sans-serif;
+.TextFieldDefault {
+  .MuiInputLabel-shrink {
+    transform: translate(0, -4px) scale(1);
+    transform-origin: top left;
+  }
+
+  .MuiFormLabel-root {
+    font-family: $font-default;
+    font-size: 16px;
+  }
+
+  .MuiInputBase-input {
+    font-family: $font-default;
+    font-size: 16px;
+  }
+
+  .Normal {
+    .MuiFormLabel-root {
+      color: #a9a9a9 !important;
+    }
+
+    .MuiInputBase-input {
+      border: 1px solid #a9a9a9 !important;
+      padding: 6px 10px 7px !important;
+      border-radius: 4px;
+      opacity: 1;
+    }
+
+    .MultiInput-input:focus,
+    .MuiInputBase-input:focus {
+      border: 1px solid #007de5 !important;
+      padding: 6px 10px 7px !important;
+      font-family: $font-default;
+      border-radius: 4px;
+      opacity: 1;
+    }
+
+    .MuiInput-underline:before,
+    .MuiInput-underline:after {
+      content: none !important;
+    }
+  }
+
+  .Focado {
+    .MuiFormLabel-root {
+      color: #007de5 !important;
+    }
+
+    .MultiInput-input:focus,
+    .MuiInputBase-input:focus {
+      border: 1px solid #007de5 !important;
+      padding: 6px 10px 7px !important;
+      border-radius: 4px;
+      opacity: 1;
+    }
+
+    .MuiInput-underline:before,
+    .MuiInput-underline:after {
+      content: none !important;
+    }
+  }
+
+  .Erro {
+    .MuiFormLabel-root,
+    .MuiFormHelperText-root {
+      color: #ff6161 !important;
+    }
+
+    .MuiInputBase-input {
+      border: 1px solid #ff6161 !important;
+      padding: 6px 10px 7px !important;
+      border-radius: 4px;
+      opacity: 1;
+      font-family: $font-default;
+    }
+
+    .MultiInput-input:focus,
+    .MuiInputBase-input:focus {
+      border: 1px solid #ff6161 !important;
+      padding: 6px 10px 7px !important;
+      border-radius: 4px;
+      opacity: 1;
+    }
+
+    .MuiInput-underline:before,
+    .MuiInput-underline:after {
+      content: none !important;
+    }
+  }
+}
