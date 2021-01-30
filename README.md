@@ -21,11 +21,11 @@ Devem ser criadas 3 telas:
 
 ### Backend
 
-O backend para este teste está pronto e encontra-se no diretório `backend`. Este, quando executado, gera um serviço web com as seguintes rotas:
- - _/login?user={email}&password={senha}_
- - _/ajuda_ 
-
-Para fins de login, deve ser utilizado qualquer e-mail no campo `user`, desde que o mesmo possua sufixo `@trademaster.com.br`.
+Para o backend deste projeto é necessário ter [Json-server](https://www.npmjs.com/package/json-server) instalado globalmente. Assim após já ter o mesmo instalado, para executar o projeto é necessário ir até a pasta mock (`src/mock`) e executar o comando abaixo:
+```
+json-server --watch db.json --port 8000
+```
+Para fins de login, deve ser utilizado os usuários `admin@trademaster.com.br` e `joao@trademaster.com.br`.
 
 A senha a ser utilizada deve ser a data atual no formato `YYYYMMDD`.
 
