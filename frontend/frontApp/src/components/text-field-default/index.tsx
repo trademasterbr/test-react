@@ -78,7 +78,7 @@ const TextFieldDefault = (props: Props) => {
   }
 
   const validarPoliticaSenha = (senha: string) => {
-    if (senha.length == 0) {
+    if (senha.length === 0) {
       setMensagemErro('Senha não pode ser vazia.')
       setEstilo('Erro')
     }

@@ -1,5 +1,4 @@
 import React from 'react'
-import { useAuth } from '../hooks/auth'
 import {
   Route as ReactRoute,
   RouteProps as ReactRouterProps,
@@ -10,14 +9,13 @@ interface RouteProps extends ReactRouterProps {
   isPrivate?: boolean
   component: React.ComponentType
 }
+const user = JSON.parse(localStorage.getItem('@tradeMaster:user'))
 
 const Route: React.FC<RouteProps> = ({
   isPrivate = false,
   component: Component,
   ...rest
 }) => {
-  const { user } = useAuth()
-
   return (
     <ReactRoute
       {...rest}
@@ -25,13 +23,12 @@ const Route: React.FC<RouteProps> = ({
         return isPrivate === !!user ? (
           <Component />
         ) : (
-          // <Redirect
-          //   to={{
-          //     pathname: isPrivate ? '/' : '/home',
-          //     state: { from: location },
-          //   }}
-          // />
-          <Component />
+          <Redirect
+            to={{
+              pathname: isPrivate ? '/' : '/home',
+              state: { from: location },
+            }}
+          />
         )
       }}
     />

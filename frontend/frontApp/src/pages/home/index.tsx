@@ -2,9 +2,9 @@ import React from 'react'
 import { Box, Typography } from '@material-ui/core'
 
 import MainPage from '../../components/main-page'
+import AvlTree from '../../components/avl-tree/App'
 
 import './style.scss'
-import AvlTree from '../../components/avl-tree/App'
 
 const PaginaHome = () => {
   return (

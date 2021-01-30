@@ -4,34 +4,39 @@ import { Box, Typography } from '@material-ui/core'
 import MainPage from '../../components/main-page'
 import { showToast } from '../../components/toast'
 
-import Ajuda from './teste.json'
 import './style.scss'
-import api from '../../utils/api'
 
 const PaginaAjuda = () => {
-  const [textAjuda, setTextAjuda] = useState(Ajuda)
-  let splitText = textAjuda.Ajuda.split('\n')
-
+  const [textAjuda, setTextAjuda] = useState([])
   useEffect(() => {
-    try {
-      api.get('/ajuda')
-    } catch (error) {
-      showToast({
-        type: 'error',
-        message: error,
-      })
-    }
+    fetch('http://localhost:8000/ajuda')
+      .then(res => res.json())
+      .then(
+        result => {
+          setTextAjuda(result.Ajuda.split('\n'))
+        },
+        error => {
+          showToast({
+            type: 'error',
+            message: error,
+          })
+        }
+      )
   }, [])
   return (
     <MainPage>
       <Box className="PageAjuda">
         <Typography className="TitleAjuda">Ajuda</Typography>
         <Box className="ContainerAjuda">
-          {splitText.map((paragraph: string) => (
-            <Typography className="TextAjuda" key={Math.random()}>
-              {paragraph}
-            </Typography>
-          ))}
+          {textAjuda ? (
+            textAjuda.map((paragraph: string) => (
+              <Typography className="TextAjuda" key={Math.random()}>
+                {paragraph}
+              </Typography>
+            ))
+          ) : (
+            <></>
+          )}
         </Box>
       </Box>
     </MainPage>

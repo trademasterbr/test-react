@@ -50,7 +50,6 @@ class AvlTree extends Component {
     })
     if (this.state.insertValue <= 9999) {
       for (var i = 1; i <= this.state.insertValue; i++) {
-        console.log(this.state.tree)
         this.resetActiveStatusOfNodes()
         this.resetPreviewContent()
         this.state.tree.insert(i)
