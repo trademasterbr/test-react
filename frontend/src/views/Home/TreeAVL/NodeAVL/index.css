@@ -1,0 +1,57 @@
+.node {
+  /* border: 1px solid #ccc; */
+  text-align: center;
+  position: relative;
+  min-height: 50px;
+  min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.node span {
+  padding: 1rem;
+  background: white;
+  z-index: 10;
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.node:not(.last)::before {
+  content: '';
+  position: absolute;
+  width: 50%;
+  left: 25%;
+  top: 50%;
+  border-bottom: 2px solid #bbb;
+}
+
+
+.node:not(.first)::after {
+  content: '';
+  position: absolute;
+  height: 50%;
+  left: calc(50% - 2px);
+  top: -25px;
+  border-left: 2px solid #bbb;
+  z-index: 40;
+}
+
+
+.node.half::before {
+  width: 25%;
+}
+
+
+.flex {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 50px;
+}
+.flex > * {
+  flex-grow: 1;
+  width: 50%;
+}
