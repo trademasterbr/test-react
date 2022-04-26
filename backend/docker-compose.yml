@@ -1,0 +1,6 @@
+version: '3.4'
+services:
+  app:
+    image: c0acf94a21f7
+    ports:
+      - 8000:8000
