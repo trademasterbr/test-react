@@ -1,0 +1,9 @@
+.div-title-help {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 25px;
+}
+.span-title-help {
+  font-size: 30px;
+}

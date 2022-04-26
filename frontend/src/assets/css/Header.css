@@ -1,0 +1,16 @@
+.header {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+
+  border-top: 2px solid #000;
+  border-bottom: 2px solid #000;
+
+  padding: 20px 80px 20px 100px;
+}
+.header-logo {
+  padding-right: 25px;
+}
+.title-home {
+  padding-right: 25px;
+}
