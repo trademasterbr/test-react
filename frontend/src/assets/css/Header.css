@@ -6,11 +6,16 @@
   border-top: 2px solid #000;
   border-bottom: 2px solid #000;
 
-  padding: 20px 80px 20px 100px;
+  padding: 10px 80px 10px 10px;
 }
 .header-logo {
   padding-right: 25px;
 }
 .title-home {
   padding-right: 25px;
+}
+.header-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
