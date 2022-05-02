@@ -1,0 +1,17 @@
+.rootHome {
+  display: flex;
+}
+
+.quantityForm {
+  padding-top: 60%;
+  padding-left: 30%;
+}
+
+.quantityTitle {
+  margin-left: 25%;
+  margin-top: 5%;
+}
+.textHome {
+  font-size: 30px;
+  font-weight: 400;
+}

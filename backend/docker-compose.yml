@@ -1,0 +1,6 @@
+version: '3.4'
+services:
+  app:
+    image: trademaster
+    ports:
+      - 8000:8000
