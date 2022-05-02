@@ -8,27 +8,27 @@ import api from '../../../services/api';
 function Login() {
   const history = useHistory();
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
+  const [user, setUser] = useState('');
   const [status, setStatus] = useState();
 
   async function handleLogin(event) {
     event.preventDefault();
 
-    if (!email || !password) {
+    if (!user || !password) {
       return;
     }
 
     const body = {
-      email,
+      user,
       password
     };
+    console.log(body);
 
     try {
-      api.post('/').then((response) => setStatus(response.status));
+      api.get('/login', body).then((response) => setStatus(response.status));
     } catch (error) {
       return error;
     }
-    console.log(status);
     if (status === 200) {
       history.push('/home');
     }
@@ -55,8 +55,8 @@ function Login() {
                     name='email'
                     id='email'
                     placeholder='joao@trademaster.com.br'
-                    onChange={(e) => setEmail(e.target.value)}
-                    value={email}
+                    onChange={(e) => setUser(e.target.value)}
+                    value={user}
                   />
                 </div>
               </div>

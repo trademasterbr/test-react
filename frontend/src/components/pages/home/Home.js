@@ -26,7 +26,7 @@ function HomePage(props) {
           </div>
         </form>
         <div className='quantityTitle'>
-          <span>Gerar Arvore AVL</span>
+          <span className='textHome'>Gerar Arvore AVL</span>
         </div>
       </div>
     </>
