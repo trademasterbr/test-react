@@ -7,19 +7,20 @@ function Help() {
   const [help, setHelp] = useState();
 
   try {
-    api.get('ajuda').then((response) => {
-      setHelp(response.data.Ajuda);
-    });
+    api.get('ajuda').then((response) => setHelp(response.data.Ajuda));
   } catch (error) {
     return error;
   }
 
   return (
-    <div className='div-title-help'>
-      <span className='span-title-help'>Ajuda</span>
-      <p></p>
-      <div className='text-help'>{help}</div>
-    </div>
+    <>
+      <Header />
+      <div className='div-title-help'>
+        <span className='span-title-help'>Ajuda</span>
+        <p></p>
+        <div className='text-help'>{help}</div>
+      </div>
+    </>
   );
 }
 
