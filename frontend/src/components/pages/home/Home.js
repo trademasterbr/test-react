@@ -4,6 +4,8 @@ import '../../../assets/css/Home.css';
 
 function HomePage(props) {
   const [quantity, setQuantity] = useState();
+  const usuario = localStorage.getItem('usuario');
+  const usuarioObj = JSON.parse(usuario);
 
   return (
     <>

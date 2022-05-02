@@ -22,7 +22,8 @@ function Login() {
       user,
       password
     };
-    console.log(body);
+
+    localStorage.setItem('usuario', JSON.stringify(body));
 
     try {
       api.get('/login', body).then((response) => setStatus(response.status));
@@ -30,7 +31,7 @@ function Login() {
       return error;
     }
     if (status === 200) {
-      history.push('/home');
+      history.push('/home', body);
     }
   }
 
