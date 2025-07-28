@@ -2,13 +2,11 @@
 name: Criador de Repositório
 
 # Gatilho do workflow
-# 'workflow_dispatch' permite que você inicie o workflow manualmente pela interface do GitHub
-# e passe os parâmetros necessários, assim como era feito no Jenkins.
 on:
   workflow_dispatch:
     inputs:
       repoName:
-        description: "Nome do repositório (ex: meu-repo-novo)"
+        description: "Nome do novo repositório (ex: meu-projeto-novo)"
         required: true
         type: string
       repoDescription:
@@ -19,94 +17,87 @@ on:
         description: "Slug do time principal que será dono do repositório (ex: devops)"
         required: true
         type: string
-        # A validação de que o time existe ocorrerá durante a execução do script.
-      repoType:
-        description: "Tipo de repositório (ex: service, library)"
+      templateRepo:
+        description: "Repositório template para copiar os arquivos (ex: meu-template-padrao)"
         required: true
-        type: choice
-        options:
-        - service
-        - library
-        - webapp
-        # Adicione outros tipos conforme a configuração 'RepoConfiguration.repoTypes'
+        type: string
+        default: 'nosso-repo-template'
+      templateBranch:
+        description: "Branch do repositório template a ser usado"
+        required: true
+        type: string
+        default: 'main'
 
 jobs:
   create-repository:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout do código (opcional, se houver scripts ou configs no repo)
-        uses: actions/checkout@v4
+      - name: Gerar Token de Autenticação do GitHub App
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Executar Script de Criação e Configuração do Repositório
         uses: actions/github-script@v7
         with:
-          # O GITHUB_TOKEN tem permissões para a maioria das ações, mas para gerenciar
-          # times e configurações avançadas de proteção, é necessário um
-          # Personal Access Token (PAT) com permissão de 'admin' na organização.
-          # Armazene-o como um secret no seu repositório ou organização.
-          github-token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          # Usa o token gerado pelo GitHub App, que é mais seguro
+          github-token: ${{ steps.generate_token.outputs.token }}
           script: |
-            // --- Configurações (equivalente ao RepoConfiguration) ---
-            const orgName = context.repo.owner;
-            const homepage = "https://sua-empresa.com.br";
-            const defaultBranch = "main";
-            const nonDefaultBranches = ["develop", "homolog"];
-            const protectedBranchesConfig = {
-              "main": { isProtected: true, requireOwner: true, reviewers: 1 },
-              "homolog": { isProtected: true, requireOwner: false, reviewers: 1 },
-              "develop": { isProtected: false }
-            };
-
             // --- Parâmetros de Entrada ---
+            const orgName = context.repo.owner;
             const repoName = "${{ github.event.inputs.repoName }}".trim();
-            const repoDescription = "${{ github.event.inputs.repoDescription }}" || `${repoName} criado pelo GitHub Actions`;
-            // CORREÇÃO: Converte o slug do time para minúsculas para garantir a compatibilidade com a API.
+            const repoDescription = "${{ github.event.inputs.repoDescription }}" || `${repoName} criado via automação`;
             const repoTeam = "${{ github.event.inputs.repoTeam }}".trim().toLowerCase();
+            const templateRepo = "${{ github.event.inputs.templateRepo }}".trim();
+            const templateBranch = "${{ github.event.inputs.templateBranch }}".trim();
 
-            if (!repoName || !repoTeam) {
-              core.setFailed('Parâmetros obrigatórios "repoName" e/ou "repoTeam" não foram fornecidos.');
+            if (!repoName || !repoTeam || !templateRepo) {
+              core.setFailed('Parâmetros obrigatórios não foram fornecidos.');
               return;
             }
 
-            console.log(`Iniciando a criação do repositório: ${repoName} para o time: ${repoTeam}`);
+            // --- Configurações Adicionais ---
+            const defaultBranch = "main";
+            const branchesToCreate = ["develop", "homolog"];
+            const branchesToProtect = ["main", "develop", "homolog"];
+
+            // Função para logar mensagens no console
+            const log = (message) => console.log(message);
 
             // 1. Criar o Repositório (ou obter se já existir)
             let repo;
+            let repoExisted = false;
+            log(`Iniciando processo para o repositório: ${repoName}`);
             try {
               const response = await github.rest.repos.createInOrg({
                 org: orgName,
                 name: repoName,
                 description: repoDescription,
-                homepage: homepage,
                 private: true,
-                auto_init: true,
-                team_slug: repoTeam,
-                permission: 'push'
+                auto_init: true, // Cria o repo com um README inicial para ter o branch 'main'
               });
               repo = response.data;
-              console.log(`Repositório "${repo.name}" criado com sucesso.`);
+              log(`✅ Repositório "${repo.name}" criado com sucesso.`);
             } catch (error) {
               if (error.status === 422 && error.message.includes("name already exists")) {
-                console.log("O repositório já existe. Continuando com a configuração.");
-                const response = await github.rest.repos.get({
-                  owner: orgName,
-                  repo: repoName,
-                });
+                log(` Repositório "${repoName}" já existe. Usando o existente.`);
+                const response = await github.rest.repos.get({ owner: orgName, repo: repoName });
                 repo = response.data;
+                repoExisted = true;
               } else {
-                core.setFailed(`Erro ao criar o repositório: ${error.message}`);
+                core.setFailed(`❌ Erro ao criar o repositório: ${error.message}`);
                 return;
               }
             }
 
-            // Pausa para garantir que a API do GitHub processe a criação
-            await new Promise(r => setTimeout(r, 5000));
-
-            // 2. Adicionar Permissões para Times Adicionais
+            // 2. Adicionar Permissões para Times
             const permitedTeams = [repoTeam, 'techleads', 'devops', 'productionteam'];
-            for (const teamSlug of permitedTeams) {
+            for (const teamSlug of [...new Set(permitedTeams)]) { // Usa Set para evitar duplicados
               try {
-                console.log(`Adicionando permissão de 'push' para o time "${teamSlug}" no repositório "${repo.name}"`);
+                log(`Adicionando permissão de 'push' para o time "${teamSlug}"`);
                 await github.rest.teams.addOrUpdateRepoPermissionsInOrg({
                   org: orgName,
                   team_slug: teamSlug,
@@ -115,79 +106,78 @@ jobs:
                   permission: 'push',
                 });
               } catch (error) {
-                console.warn(`Aviso: Não foi possível adicionar o time "${teamSlug}". O time existe e o slug está correto? Erro: ${error.message}`);
+                core.warning(`Aviso: Não foi possível adicionar o time "${teamSlug}". Verifique se o slug está correto. Erro: ${error.message}`);
               }
             }
 
-            // 3. Criar Branches Adicionais a partir do Branch Padrão
-            const mainRef = await github.rest.git.getRef({
-              owner: orgName,
-              repo: repo.name,
-              ref: `heads/${defaultBranch}`
-            });
-            const mainRefSha = mainRef.data.object.sha;
+            // Apenas executa a cópia e criação de branches se o repo for novo
+            if (!repoExisted) {
+              // 3. Copiar Arquivos do Repositório Template
+              log(`Copiando arquivos de "${templateRepo}" (branch: ${templateBranch})...`);
+              const pathsToCopy = [".github", "envs-dev.yaml", "envs-hml.yaml", "envs-prd.yaml", "secrets.yaml", "gh-actions-config.yaml"];
 
-            for (const branchName of nonDefaultBranches) {
-              try {
-                await github.rest.git.createRef({
-                  owner: orgName,
-                  repo: repo.name,
-                  ref: `refs/heads/${branchName}`,
-                  sha: mainRefSha,
-                });
-                console.log(`Branch "${branchName}" criado com sucesso.`);
-              } catch (error) {
-                 if (error.status === 422) {
-                    console.log(`Branch "${branchName}" já existe.`);
-                 } else {
-                    console.warn(`Aviso: Não foi possível criar o branch "${branchName}". Erro: ${error.message}`);
-                 }
+              const copyFile = async (path) => {
+                try {
+                  const contentResponse = await github.rest.repos.getContent({
+                    owner: orgName,
+                    repo: templateRepo,
+                    path: path,
+                    ref: templateBranch,
+                  });
+
+                  if (Array.isArray(contentResponse.data)) { // Se for um diretório
+                    for (const item of contentResponse.data) {
+                      await copyFile(item.path); // Chama recursivamente
+                    }
+                  } else { // Se for um arquivo
+                    log(` -> Copiando arquivo: ${contentResponse.data.path}`);
+                    await github.rest.repos.createOrUpdateFileContents({
+                      owner: orgName,
+                      repo: repo.name,
+                      path: contentResponse.data.path,
+                      message: `ci: Adiciona arquivo de template ${contentResponse.data.name}`,
+                      content: contentResponse.data.content,
+                      branch: defaultBranch,
+                    });
+                  }
+                } catch (error) {
+                  if (error.status === 404) {
+                     core.warning(`Aviso: O caminho/arquivo "${path}" não foi encontrado no template e será ignorado.`);
+                  } else {
+                     core.warning(`Aviso ao copiar "${path}": ${error.message}`);
+                  }
+                }
+              };
+
+              for (const path of pathsToCopy) {
+                await copyFile(path);
               }
+              log('✅ Cópia de arquivos do template finalizada.');
+
+              // 4. Criar Branches de Desenvolvimento
+              log(`Criando branches a partir de '${defaultBranch}'...`);
+              const mainRef = await github.rest.git.getRef({ owner: orgName, repo: repo.name, ref: `heads/${defaultBranch}` });
+              for (const branchName of branchesToCreate) {
+                try {
+                  await github.rest.git.createRef({
+                    owner: orgName,
+                    repo: repo.name,
+                    ref: `refs/heads/${branchName}`,
+                    sha: mainRef.data.object.sha,
+                  });
+                  log(` -> Branch '${branchName}' criado.`);
+                } catch (error) {
+                  if (error.status === 422) { log(` -> Branch '${branchName}' já existe.`); }
+                  else { core.warning(`Aviso ao criar branch '${branchName}': ${error.message}`); }
+                }
+              }
+            } else {
+              log(" Repositório já existia, pulando cópia de arquivos e criação de branches.");
             }
 
-            // 4. Criar ou Atualizar o Arquivo CODEOWNERS
-            const codeOwnersContent = [
-              `* @${orgName}/productionteam`,
-              `Jenkinsfile @${orgName}/devops`,
-              `jenkinsconfig.yaml @${orgName}/devops`
-            ].join('\n');
-            const codeOwnersPath = 'CODEOWNERS';
-            const commitMessage = `[CI] Adiciona ou atualiza o arquivo ${codeOwnersPath}`;
-
-            try {
-              let existingFileSha;
-              try {
-                const { data: existingFile } = await github.rest.repos.getContent({
-                  owner: orgName,
-                  repo: repo.name,
-                  path: codeOwnersPath,
-                  ref: defaultBranch,
-                });
-                existingFileSha = existingFile.sha;
-              } catch (e) {
-                // Arquivo não existe, normal na primeira execução.
-              }
-
-              await github.rest.repos.createOrUpdateFileContents({
-                owner: orgName,
-                repo: repo.name,
-                path: codeOwnersPath,
-                message: commitMessage,
-                content: Buffer.from(codeOwnersContent).toString('base64'),
-                branch: defaultBranch,
-                sha: existingFileSha,
-              });
-              console.log(`Arquivo ${codeOwnersPath} criado/atualizado com sucesso no branch "${defaultBranch}".`);
-            } catch (error) {
-              core.setFailed(`Erro ao criar/atualizar o arquivo CODEOWNERS: ${error.message}`);
-            }
-
-            // 5. Proteger os Branches
-            for (const branchName in protectedBranchesConfig) {
-              const config = protectedBranchesConfig[branchName];
-              if (!config.isProtected) continue;
-
-              console.log(`Aplicando regras de proteção para o branch: "${branchName}"`);
+            // 5. Aplicar Regras de Proteção de Branch
+            log('Aplicando regras de proteção...');
+            for (const branchName of branchesToProtect) {
               try {
                 await github.rest.repos.updateBranchProtection({
                   owner: orgName,
@@ -196,14 +186,16 @@ jobs:
                   required_status_checks: null,
                   enforce_admins: true,
                   required_pull_request_reviews: {
-                    dismiss_stale_reviews: false,
-                    require_code_owner_reviews: config.requireOwner,
-                    required_approving_review_count: config.reviewers,
+                    dismiss_stale_reviews: true,
+                    require_code_owner_reviews: false,
+                    required_approving_review_count: 1,
                   },
                   restrictions: null,
                 });
-                console.log(`Branch "${branchName}" protegido com sucesso.`);
+                log(` -> Regras aplicadas com sucesso ao branch '${branchName}'.`);
               } catch (error) {
-                 core.setFailed(`Erro ao proteger o branch "${branchName}": ${error.message}`);
+                core.warning(`Aviso: Não foi possível proteger o branch '${branchName}'. Ele existe? Erro: ${error.message}`);
               }
             }
+
+            log(`\n🎉 Processo concluído! Repositório disponível em: ${repo.html_url}`);
