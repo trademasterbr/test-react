@@ -8,20 +8,18 @@ on:
   workflow_dispatch:
     inputs:
       repoName:
-        description: "Nome do repositório (ex: meu-repo-incrivel)"
+        description: "Nome do repositório (ex: meu-repo-novo)"
         required: true
         type: string
       repoDescription:
-        description: "Descrição do repositório"
+        description: "Descrição breve do repositório"
         required: false
         type: string
       repoTeam:
-        description: "Time principal que será dono do repositório (slug do time)"
+        description: "Slug do time principal que será dono do repositório (ex: devops)"
         required: true
         type: string
-        # Você pode pré-popular com os times mais comuns, mas a validação exata
-        # de todos os times via API antes da execução não é tão direta quanto no Jenkins.
-        # A validação ocorrerá durante a execução do script.
+        # A validação de que o time existe ocorrerá durante a execução do script.
       repoType:
         description: "Tipo de repositório (ex: service, library)"
         required: true
@@ -43,14 +41,13 @@ jobs:
         uses: actions/github-script@v7
         with:
           # O GITHUB_TOKEN tem permissões para a maioria das ações, mas para gerenciar
-          # times e configurações avançadas de proteção, pode ser necessário um
-          # Personal Access Token (PAT) com escopo 'repo' e 'admin:org'.
+          # times e configurações avançadas de proteção, é necessário um
+          # Personal Access Token (PAT) com permissão de 'admin' na organização.
           # Armazene-o como um secret no seu repositório ou organização.
           github-token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
           script: |
             // --- Configurações (equivalente ao RepoConfiguration) ---
-            // Mova estas configurações para um local mais adequado se necessário (ex: um arquivo JSON no repo)
-            const orgName = context.repo.owner; // Pega a organização do contexto atual
+            const orgName = context.repo.owner;
             const homepage = "https://sua-empresa.com.br";
             const defaultBranch = "main";
             const nonDefaultBranches = ["develop", "homolog"];
@@ -59,12 +56,12 @@ jobs:
               "homolog": { isProtected: true, requireOwner: false, reviewers: 1 },
               "develop": { isProtected: false }
             };
-            const branchRequireOwnerNames = ["main"]; // Branches que exigem revisão do CODEOWNER
 
             // --- Parâmetros de Entrada ---
             const repoName = "${{ github.event.inputs.repoName }}".trim();
             const repoDescription = "${{ github.event.inputs.repoDescription }}" || `${repoName} criado pelo GitHub Actions`;
-            const repoTeam = "${{ github.event.inputs.repoTeam }}";
+            // CORREÇÃO: Converte o slug do time para minúsculas para garantir a compatibilidade com a API.
+            const repoTeam = "${{ github.event.inputs.repoTeam }}".trim().toLowerCase();
 
             if (!repoName || !repoTeam) {
               core.setFailed('Parâmetros obrigatórios "repoName" e/ou "repoTeam" não foram fornecidos.');
@@ -82,9 +79,9 @@ jobs:
                 description: repoDescription,
                 homepage: homepage,
                 private: true,
-                auto_init: true, // Cria o repo com um commit inicial e o default branch
-                team_slug: repoTeam, // Associa o time principal na criação
-                permission: 'push' // Permissão do time principal
+                auto_init: true,
+                team_slug: repoTeam,
+                permission: 'push'
               });
               repo = response.data;
               console.log(`Repositório "${repo.name}" criado com sucesso.`);
@@ -115,10 +112,10 @@ jobs:
                   team_slug: teamSlug,
                   owner: orgName,
                   repo: repo.name,
-                  permission: 'push', // push, pull, admin, maintain, triage
+                  permission: 'push',
                 });
               } catch (error) {
-                console.warn(`Aviso: Não foi possível adicionar o time "${teamSlug}". O time existe? Erro: ${error.message}`);
+                console.warn(`Aviso: Não foi possível adicionar o time "${teamSlug}". O time existe e o slug está correto? Erro: ${error.message}`);
               }
             }
 
@@ -140,7 +137,7 @@ jobs:
                 });
                 console.log(`Branch "${branchName}" criado com sucesso.`);
               } catch (error) {
-                 if (error.status === 422) { // Unprocessable Entity - geralmente significa que já existe
+                 if (error.status === 422) {
                     console.log(`Branch "${branchName}" já existe.`);
                  } else {
                     console.warn(`Aviso: Não foi possível criar o branch "${branchName}". Erro: ${error.message}`);
@@ -157,10 +154,7 @@ jobs:
             const codeOwnersPath = 'CODEOWNERS';
             const commitMessage = `[CI] Adiciona ou atualiza o arquivo ${codeOwnersPath}`;
 
-            // A criação do CODEOWNERS será feita no branch padrão (main)
-            // A proteção de branch garantirá que ele seja respeitado onde for exigido.
             try {
-              // Verifica se o arquivo já existe para obter o SHA (necessário para atualização)
               let existingFileSha;
               try {
                 const { data: existingFile } = await github.rest.repos.getContent({
@@ -171,7 +165,7 @@ jobs:
                 });
                 existingFileSha = existingFile.sha;
               } catch (e) {
-                // Arquivo não existe, o que é normal na primeira execução
+                // Arquivo não existe, normal na primeira execução.
               }
 
               await github.rest.repos.createOrUpdateFileContents({
@@ -181,7 +175,7 @@ jobs:
                 message: commitMessage,
                 content: Buffer.from(codeOwnersContent).toString('base64'),
                 branch: defaultBranch,
-                sha: existingFileSha, // Se for undefined, cria; se tiver valor, atualiza.
+                sha: existingFileSha,
               });
               console.log(`Arquivo ${codeOwnersPath} criado/atualizado com sucesso no branch "${defaultBranch}".`);
             } catch (error) {
@@ -199,15 +193,14 @@ jobs:
                   owner: orgName,
                   repo: repo.name,
                   branch: branchName,
-                  // Regras de proteção
-                  required_status_checks: null, // Defina se necessário
+                  required_status_checks: null,
                   enforce_admins: true,
                   required_pull_request_reviews: {
                     dismiss_stale_reviews: false,
                     require_code_owner_reviews: config.requireOwner,
                     required_approving_review_count: config.reviewers,
                   },
-                  restrictions: null, // Pode restringir quem pode fazer push
+                  restrictions: null,
                 });
                 console.log(`Branch "${branchName}" protegido com sucesso.`);
               } catch (error) {
