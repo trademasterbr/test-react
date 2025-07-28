@@ -1,0 +1,216 @@
+# Nome do Workflow
+name: Criador de Repositório
+
+# Gatilho do workflow
+# 'workflow_dispatch' permite que você inicie o workflow manualmente pela interface do GitHub
+# e passe os parâmetros necessários, assim como era feito no Jenkins.
+on:
+  workflow_dispatch:
+    inputs:
+      repoName:
+        description: "Nome do repositório (ex: meu-repo-incrivel)"
+        required: true
+        type: string
+      repoDescription:
+        description: "Descrição do repositório"
+        required: false
+        type: string
+      repoTeam:
+        description: "Time principal que será dono do repositório (slug do time)"
+        required: true
+        type: string
+        # Você pode pré-popular com os times mais comuns, mas a validação exata
+        # de todos os times via API antes da execução não é tão direta quanto no Jenkins.
+        # A validação ocorrerá durante a execução do script.
+      repoType:
+        description: "Tipo de repositório (ex: service, library)"
+        required: true
+        type: choice
+        options:
+        - service
+        - library
+        - webapp
+        # Adicione outros tipos conforme a configuração 'RepoConfiguration.repoTypes'
+
+jobs:
+  create-repository:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código (opcional, se houver scripts ou configs no repo)
+        uses: actions/checkout@v4
+
+      - name: Executar Script de Criação e Configuração do Repositório
+        uses: actions/github-script@v7
+        with:
+          # O GITHUB_TOKEN tem permissões para a maioria das ações, mas para gerenciar
+          # times e configurações avançadas de proteção, pode ser necessário um
+          # Personal Access Token (PAT) com escopo 'repo' e 'admin:org'.
+          # Armazene-o como um secret no seu repositório ou organização.
+          github-token: ${{ secrets.ADMIN_GITHUB_TOKEN }}
+          script: |
+            // --- Configurações (equivalente ao RepoConfiguration) ---
+            // Mova estas configurações para um local mais adequado se necessário (ex: um arquivo JSON no repo)
+            const orgName = context.repo.owner; // Pega a organização do contexto atual
+            const homepage = "https://sua-empresa.com.br";
+            const defaultBranch = "main";
+            const nonDefaultBranches = ["develop", "homolog"];
+            const protectedBranchesConfig = {
+              "main": { isProtected: true, requireOwner: true, reviewers: 1 },
+              "homolog": { isProtected: true, requireOwner: false, reviewers: 1 },
+              "develop": { isProtected: false }
+            };
+            const branchRequireOwnerNames = ["main"]; // Branches que exigem revisão do CODEOWNER
+
+            // --- Parâmetros de Entrada ---
+            const repoName = "${{ github.event.inputs.repoName }}".trim();
+            const repoDescription = "${{ github.event.inputs.repoDescription }}" || `${repoName} criado pelo GitHub Actions`;
+            const repoTeam = "${{ github.event.inputs.repoTeam }}";
+
+            if (!repoName || !repoTeam) {
+              core.setFailed('Parâmetros obrigatórios "repoName" e/ou "repoTeam" não foram fornecidos.');
+              return;
+            }
+
+            console.log(`Iniciando a criação do repositório: ${repoName} para o time: ${repoTeam}`);
+
+            // 1. Criar o Repositório (ou obter se já existir)
+            let repo;
+            try {
+              const response = await github.rest.repos.createInOrg({
+                org: orgName,
+                name: repoName,
+                description: repoDescription,
+                homepage: homepage,
+                private: true,
+                auto_init: true, // Cria o repo com um commit inicial e o default branch
+                team_slug: repoTeam, // Associa o time principal na criação
+                permission: 'push' // Permissão do time principal
+              });
+              repo = response.data;
+              console.log(`Repositório "${repo.name}" criado com sucesso.`);
+            } catch (error) {
+              if (error.status === 422 && error.message.includes("name already exists")) {
+                console.log("O repositório já existe. Continuando com a configuração.");
+                const response = await github.rest.repos.get({
+                  owner: orgName,
+                  repo: repoName,
+                });
+                repo = response.data;
+              } else {
+                core.setFailed(`Erro ao criar o repositório: ${error.message}`);
+                return;
+              }
+            }
+
+            // Pausa para garantir que a API do GitHub processe a criação
+            await new Promise(r => setTimeout(r, 5000));
+
+            // 2. Adicionar Permissões para Times Adicionais
+            const permitedTeams = [repoTeam, 'techleads', 'devops', 'productionteam'];
+            for (const teamSlug of permitedTeams) {
+              try {
+                console.log(`Adicionando permissão de 'push' para o time "${teamSlug}" no repositório "${repo.name}"`);
+                await github.rest.teams.addOrUpdateRepoPermissionsInOrg({
+                  org: orgName,
+                  team_slug: teamSlug,
+                  owner: orgName,
+                  repo: repo.name,
+                  permission: 'push', // push, pull, admin, maintain, triage
+                });
+              } catch (error) {
+                console.warn(`Aviso: Não foi possível adicionar o time "${teamSlug}". O time existe? Erro: ${error.message}`);
+              }
+            }
+
+            // 3. Criar Branches Adicionais a partir do Branch Padrão
+            const mainRef = await github.rest.git.getRef({
+              owner: orgName,
+              repo: repo.name,
+              ref: `heads/${defaultBranch}`
+            });
+            const mainRefSha = mainRef.data.object.sha;
+
+            for (const branchName of nonDefaultBranches) {
+              try {
+                await github.rest.git.createRef({
+                  owner: orgName,
+                  repo: repo.name,
+                  ref: `refs/heads/${branchName}`,
+                  sha: mainRefSha,
+                });
+                console.log(`Branch "${branchName}" criado com sucesso.`);
+              } catch (error) {
+                 if (error.status === 422) { // Unprocessable Entity - geralmente significa que já existe
+                    console.log(`Branch "${branchName}" já existe.`);
+                 } else {
+                    console.warn(`Aviso: Não foi possível criar o branch "${branchName}". Erro: ${error.message}`);
+                 }
+              }
+            }
+
+            // 4. Criar ou Atualizar o Arquivo CODEOWNERS
+            const codeOwnersContent = [
+              `* @${orgName}/productionteam`,
+              `Jenkinsfile @${orgName}/devops`,
+              `jenkinsconfig.yaml @${orgName}/devops`
+            ].join('\n');
+            const codeOwnersPath = 'CODEOWNERS';
+            const commitMessage = `[CI] Adiciona ou atualiza o arquivo ${codeOwnersPath}`;
+
+            // A criação do CODEOWNERS será feita no branch padrão (main)
+            // A proteção de branch garantirá que ele seja respeitado onde for exigido.
+            try {
+              // Verifica se o arquivo já existe para obter o SHA (necessário para atualização)
+              let existingFileSha;
+              try {
+                const { data: existingFile } = await github.rest.repos.getContent({
+                  owner: orgName,
+                  repo: repo.name,
+                  path: codeOwnersPath,
+                  ref: defaultBranch,
+                });
+                existingFileSha = existingFile.sha;
+              } catch (e) {
+                // Arquivo não existe, o que é normal na primeira execução
+              }
+
+              await github.rest.repos.createOrUpdateFileContents({
+                owner: orgName,
+                repo: repo.name,
+                path: codeOwnersPath,
+                message: commitMessage,
+                content: Buffer.from(codeOwnersContent).toString('base64'),
+                branch: defaultBranch,
+                sha: existingFileSha, // Se for undefined, cria; se tiver valor, atualiza.
+              });
+              console.log(`Arquivo ${codeOwnersPath} criado/atualizado com sucesso no branch "${defaultBranch}".`);
+            } catch (error) {
+              core.setFailed(`Erro ao criar/atualizar o arquivo CODEOWNERS: ${error.message}`);
+            }
+
+            // 5. Proteger os Branches
+            for (const branchName in protectedBranchesConfig) {
+              const config = protectedBranchesConfig[branchName];
+              if (!config.isProtected) continue;
+
+              console.log(`Aplicando regras de proteção para o branch: "${branchName}"`);
+              try {
+                await github.rest.repos.updateBranchProtection({
+                  owner: orgName,
+                  repo: repo.name,
+                  branch: branchName,
+                  // Regras de proteção
+                  required_status_checks: null, // Defina se necessário
+                  enforce_admins: true,
+                  required_pull_request_reviews: {
+                    dismiss_stale_reviews: false,
+                    require_code_owner_reviews: config.requireOwner,
+                    required_approving_review_count: config.reviewers,
+                  },
+                  restrictions: null, // Pode restringir quem pode fazer push
+                });
+                console.log(`Branch "${branchName}" protegido com sucesso.`);
+              } catch (error) {
+                 core.setFailed(`Erro ao proteger o branch "${branchName}": ${error.message}`);
+              }
+            }
