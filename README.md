@@ -1,6 +1,6 @@
 # Test React
 
-Esta é uma aplicação [React](https://reactjs.org/) simple para avaliar o conhecimento do candidato para uma vaga de desenvolvedor frontend para [Trademaster Servicos e Participações S.A.](https://www.trademaster.com.br/) 
+Esta é uma aplicação [React](https://reactjs.org/) simples para avaliar o conhecimento do candidato para uma vaga de desenvolvedor frontend para [Trademaster Servicos e Participações S.A.](https://www.trademaster.com.br/) 
 
 ## TODO
 [PR](https://docs.github.com/pt/free-pro-team@latest/github/collaborating-with-issues-and-pull-requests/about-pull-requests) é a melhor maneira de propor alterações na base de código (usamos o [Github Flow](https://guides.github.com/introduction/flow/index.html)). Acolhemos e analisamos ativamente suas requisições:
