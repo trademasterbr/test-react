@@ -14,24 +14,15 @@ on:
         required: false
         type: string
       repoTeam:
-        description: "Slug do time principal que será dono do repositório (ex: devops)"
+        description: "Slug do time principal que será dono do repositório (ex: time-desenvolvimento)"
         required: true
         type: string
-      templateRepo:
-        description: "Repositório template para copiar os arquivos (ex: meu-template-padrao)"
-        required: true
-        type: string
-        default: 'nosso-repo-template'
-      templateBranch:
-        description: "Branch do repositório template a ser usado"
-        required: true
-        type: string
-        default: 'main'
 
 jobs:
-  create-repository:
+  create-and-configure-repository:
     runs-on: ubuntu-latest
     steps:
+      # Passo 1: Gerar um token de curta duração a partir do GitHub App.
       - name: Gerar Token de Autenticação do GitHub App
         id: generate_token
         uses: actions/create-github-app-token@v1
@@ -40,83 +31,43 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
 
-      - name: Executar Script de Criação e Configuração do Repositório
+      # Passo 2: Executar o script principal usando o token gerado.
+      - name: Criar e Configurar Repositório via Script
         uses: actions/github-script@v7
         with:
-          # Usa o token gerado pelo GitHub App, que é mais seguro
           github-token: ${{ steps.generate_token.outputs.token }}
           script: |
-            // --- Parâmetros de Entrada ---
+            // --- Parâmetros de Entrada e Configurações Fixas ---
             const orgName = context.repo.owner;
             const repoName = "${{ github.event.inputs.repoName }}".trim();
-            const repoDescription = "${{ github.event.inputs.repoDescription }}" || `${repoName} criado via automação`;
-            const repoTeam = "${{ github.event.inputs.repoTeam }}".trim().toLowerCase();
-            const templateRepo = "${{ github.event.inputs.templateRepo }}".trim();
-            const templateBranch = "${{ github.event.inputs.templateBranch }}".trim();
+            const repoDescription = "${{ github.event.inputs.repoDescription }}" || `Repositório ${repoName} criado via automação`;
+            const mainTeamSlug = "${{ github.event.inputs.repoTeam }}".trim().toLowerCase();
+            
+            // Repositório e branch de template fixos
+            const templateRepo = 'trade-actions';
+            const templateBranch = 'stable';
+            const defaultBranch = 'main';
 
-            if (!repoName || !repoTeam || !templateRepo) {
-              core.setFailed('Parâmetros obrigatórios não foram fornecidos.');
-              return;
-            }
+            const log = (message) => core.info(message);
 
-            // --- Configurações Adicionais ---
-            const defaultBranch = "main";
-            const branchesToCreate = ["develop", "homolog"];
-            const branchesToProtect = ["main", "develop", "homolog"];
-
-            // Função para logar mensagens no console
-            const log = (message) => console.log(message);
-
-            // 1. Criar o Repositório (ou obter se já existir)
-            let repo;
-            let repoExisted = false;
-            log(`Iniciando processo para o repositório: ${repoName}`);
             try {
-              const response = await github.rest.repos.createInOrg({
+              // --- 1. CRIAR UM REPOSITÓRIO NOVO E VAZIO ---
+              log(`Iniciando a criação do repositório "${repoName}"...`);
+              const createRepoResponse = await github.rest.repos.createInOrg({
                 org: orgName,
                 name: repoName,
                 description: repoDescription,
                 private: true,
-                auto_init: true, // Cria o repo com um README inicial para ter o branch 'main'
+                auto_init: true, // Cria o repo com um README para ter o branch 'main'
               });
-              repo = response.data;
-              log(`✅ Repositório "${repo.name}" criado com sucesso.`);
-            } catch (error) {
-              if (error.status === 422 && error.message.includes("name already exists")) {
-                log(` Repositório "${repoName}" já existe. Usando o existente.`);
-                const response = await github.rest.repos.get({ owner: orgName, repo: repoName });
-                repo = response.data;
-                repoExisted = true;
-              } else {
-                core.setFailed(`❌ Erro ao criar o repositório: ${error.message}`);
-                return;
-              }
-            }
+              const repo = createRepoResponse.data;
+              log(`✅ Repositório "${repo.name}" criado com sucesso! URL: ${repo.html_url}`);
 
-            // 2. Adicionar Permissões para Times
-            const permitedTeams = [repoTeam, 'techleads', 'devops', 'productionteam'];
-            for (const teamSlug of [...new Set(permitedTeams)]) { // Usa Set para evitar duplicados
-              try {
-                log(`Adicionando permissão de 'push' para o time "${teamSlug}"`);
-                await github.rest.teams.addOrUpdateRepoPermissionsInOrg({
-                  org: orgName,
-                  team_slug: teamSlug,
-                  owner: orgName,
-                  repo: repo.name,
-                  permission: 'push',
-                });
-              } catch (error) {
-                core.warning(`Aviso: Não foi possível adicionar o time "${teamSlug}". Verifique se o slug está correto. Erro: ${error.message}`);
-              }
-            }
-
-            // Apenas executa a cópia e criação de branches se o repo for novo
-            if (!repoExisted) {
-              // 3. Copiar Arquivos do Repositório Template
+              // --- 2. COPIAR ARQUIVOS DO TEMPLATE ---
               log(`Copiando arquivos de "${templateRepo}" (branch: ${templateBranch})...`);
               const pathsToCopy = [".github", "envs-dev.yaml", "envs-hml.yaml", "envs-prd.yaml", "secrets.yaml", "gh-actions-config.yaml"];
-
-              const copyFile = async (path) => {
+              
+              const copyContent = async (path) => {
                 try {
                   const contentResponse = await github.rest.repos.getContent({
                     owner: orgName,
@@ -127,7 +78,7 @@ jobs:
 
                   if (Array.isArray(contentResponse.data)) { // Se for um diretório
                     for (const item of contentResponse.data) {
-                      await copyFile(item.path); // Chama recursivamente
+                      await copyContent(item.path); // Chama recursivamente para cada item no diretório
                     }
                   } else { // Se for um arquivo
                     log(` -> Copiando arquivo: ${contentResponse.data.path}`);
@@ -135,67 +86,66 @@ jobs:
                       owner: orgName,
                       repo: repo.name,
                       path: contentResponse.data.path,
-                      message: `ci: Adiciona arquivo de template ${contentResponse.data.name}`,
-                      content: contentResponse.data.content,
+                      message: `ci: Adiciona arquivo de template '${contentResponse.data.name}'`,
+                      content: contentResponse.data.content, // O conteúdo já vem em base64
                       branch: defaultBranch,
                     });
                   }
                 } catch (error) {
                   if (error.status === 404) {
-                     core.warning(`Aviso: O caminho/arquivo "${path}" não foi encontrado no template e será ignorado.`);
+                     core.warning(`⚠️ Aviso: O caminho/arquivo "${path}" não foi encontrado no template e será ignorado.`);
                   } else {
-                     core.warning(`Aviso ao copiar "${path}": ${error.message}`);
+                     core.warning(`⚠️ Aviso ao copiar "${path}": ${error.message}`);
                   }
                 }
               };
 
               for (const path of pathsToCopy) {
-                await copyFile(path);
+                await copyContent(path);
               }
               log('✅ Cópia de arquivos do template finalizada.');
 
-              // 4. Criar Branches de Desenvolvimento
-              log(`Criando branches a partir de '${defaultBranch}'...`);
+              // --- 3. CRIAR BRANCHES PADRÃO (develop, homolog) ---
+              log("Criando branches padrão...");
               const mainRef = await github.rest.git.getRef({ owner: orgName, repo: repo.name, ref: `heads/${defaultBranch}` });
-              for (const branchName of branchesToCreate) {
-                try {
-                  await github.rest.git.createRef({
-                    owner: orgName,
-                    repo: repo.name,
-                    ref: `refs/heads/${branchName}`,
-                    sha: mainRef.data.object.sha,
-                  });
-                  log(` -> Branch '${branchName}' criado.`);
-                } catch (error) {
-                  if (error.status === 422) { log(` -> Branch '${branchName}' já existe.`); }
-                  else { core.warning(`Aviso ao criar branch '${branchName}': ${error.message}`); }
-                }
-              }
-            } else {
-              log(" Repositório já existia, pulando cópia de arquivos e criação de branches.");
-            }
+              const mainSha = mainRef.data.object.sha;
 
-            // 5. Aplicar Regras de Proteção de Branch
-            log('Aplicando regras de proteção...');
-            for (const branchName of branchesToProtect) {
-              try {
+              const branchesToCreate = ["develop", "homolog"];
+              for (const branchName of branchesToCreate) {
+                await github.rest.git.createRef({ owner: orgName, repo: repo.name, ref: `refs/heads/${branchName}`, sha: mainSha });
+                log(` -> Branch '${branchName}' criado.`);
+              }
+
+              // --- 4. ADICIONAR PERMISSÕES PARA TIMES ---
+              log("Adicionando permissões para os times...");
+              const teamsToAssign = [mainTeamSlug, 'techleads', 'devops', 'productionteam'];
+              for (const teamSlug of [...new Set(teamsToAssign)]) {
+                await github.rest.teams.addOrUpdateRepoPermissionsInOrg({ org: orgName, team_slug: teamSlug, owner: orgName, repo: repo.name, permission: 'push' });
+                log(` -> Permissão de 'push' adicionada para "${teamSlug}".`);
+              }
+
+              // --- 5. APLICAR REGRAS DE PROTEÇÃO DE BRANCH ---
+              log('Aplicando regras de proteção de branch...');
+              const branchesToProtect = ["main", "develop", "homolog"];
+              for (const branchName of branchesToProtect) {
                 await github.rest.repos.updateBranchProtection({
                   owner: orgName,
                   repo: repo.name,
                   branch: branchName,
                   required_status_checks: null,
                   enforce_admins: true,
-                  required_pull_request_reviews: {
-                    dismiss_stale_reviews: true,
-                    require_code_owner_reviews: false,
-                    required_approving_review_count: 1,
-                  },
+                  required_pull_request_reviews: { required_approving_review_count: 1 },
                   restrictions: null,
                 });
-                log(` -> Regras aplicadas com sucesso ao branch '${branchName}'.`);
-              } catch (error) {
-                core.warning(`Aviso: Não foi possível proteger o branch '${branchName}'. Ele existe? Erro: ${error.message}`);
+                log(` -> Regra de proteção aplicada ao branch '${branchName}'.`);
+              }
+
+              log(`\n🎉 Processo concluído com sucesso!`);
+
+            } catch (error) {
+              if (error.status === 422 && error.message.includes("name already exists")) {
+                core.setFailed(`❌ Erro: O repositório "${repoName}" já existe na organização "${orgName}".`);
+              } else {
+                core.setFailed(`❌ Erro crítico durante a execução: ${error.message}.`);
               }
             }
-
-            log(`\n🎉 Processo concluído! Repositório disponível em: ${repo.html_url}`);
