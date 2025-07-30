@@ -45,7 +45,7 @@ jobs:
             
             // Repositório e branch de template fixos
             const templateRepo = 'trade-actions';
-            const templateBranch = 'stable';
+            const templateBranch = 'caller/stable';
             const defaultBranch = 'main';
 
             const log = (message) => core.info(message);
