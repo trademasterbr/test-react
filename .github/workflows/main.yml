@@ -22,16 +22,25 @@ jobs:
   create-and-configure-repository:
     runs-on: ubuntu-latest
     steps:
-      # Passo 1: Gerar um token de curta duração a partir do GitHub App.
+      # Passo 1: Decodificar a chave privada de Base64 para um arquivo temporário.
+      # Esta é a abordagem mais robusta para evitar erros de formatação com secrets de múltiplas linhas.
+      - name: Decode Private Key
+        id: private_key
+        run: |
+          echo "${{ secrets.APP_PRIVATE_KEY }}" | base64 --decode > private-key.pem
+          echo "path=private-key.pem" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # Passo 2: Gerar um token de curta duração a partir do GitHub App.
       - name: Gerar Token de Autenticação do GitHub App
         id: generate_token
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          private-key: ${{ steps.private_key.outputs.path }} # Usa o caminho do arquivo decodificado
           owner: ${{ github.repository_owner }}
 
-      # Passo 2: Executar o script principal usando o token gerado.
+      # Passo 3: Executar o script principal usando o token gerado.
       - name: Criar e Configurar Repositório via Script
         uses: actions/github-script@v7
         with:
