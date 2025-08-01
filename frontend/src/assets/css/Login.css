@@ -1,0 +1,48 @@
+.container {
+  width: 100vw;
+  height: 100vh;
+  background: #fff;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.box {
+  width: 350px;
+  height: 350px;
+  background: #fff;
+  border: solid 3px #000;
+  border-radius: 30px;
+}
+body {
+  margin: 0px;
+}
+.Logo {
+  display: flex;
+  justify-content: center;
+  padding-top: 5%;
+}
+.formLogin {
+  display: flex;
+  justify-content: center;
+  padding-top: 15%;
+}
+input {
+  width: 200px;
+  border: solid;
+}
+.password {
+  padding-top: 10%;
+}
+.buttonForm {
+  display: flex;
+  justify-content: center;
+  padding-top: 15%;
+}
+button.form-button {
+  appearance: none;
+  border-bottom: solid 5px;
+  border-right: solid 5px;
+  width: 70px;
+  height: 30px;
+}
